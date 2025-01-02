@@ -1,11 +1,11 @@
 Azure Terraform Setup Instructions
 =========================================
 
-This project is a companion to a video done on my channel on how to configure terraform with Azure. 
+This project complements a video on my channel that demonstrates how to configure Terraform with Azure.
 
-The terraform in this project creates a minimal VNET with only one public subnet. 
+The Terraform configuration in this project creates a minimal virtual network (VNet) with a single public subnet.
 
-A VM is created with Ubuntu as the OS with a [custom_data](scripts/custom_data.sh) script installing apache when the instance boots.
+An Ubuntu virtual machine (VM) is deployed, and a custom_data](scripts/custom_data.sh) script is used to install Apache during the instance's boot process.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ A VM is created with Ubuntu as the OS with a [custom_data](scripts/custom_data.s
 * [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)
 * [Install Latest Packer](https://developer.hashicorp.com/packer/install)
 
-NOTE: Make sure the aws, packer and terraform commands are all in your $PATH.
+NOTE: Make sure the az, packer and terraform commands are all in your $PATH.
 
 The [check_env](./check_env.sh) script will validate this is set correctly when you run the terraform build.
 
