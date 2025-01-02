@@ -93,7 +93,7 @@ To set up a system account for Terraform, you need to create a **Service Princip
    - Select the subscription where Terraform will manage resources.
    - Click **Access Control (IAM)** in the left-hand menu.
    - Click **+ Add Role Assignment**.
-   - Assign the appropriate role (e.g., **Contributor** or **Owner** for broader permissions).
+   - Assign the **Contributor** role (In the `Privileged administrator` roles tab)
    - In the **Assign Access To** field, select **Azure AD user, group, or service principal**.
    - Search for the registered service principal (e.g., `Terraform-SP`) and select it.
    - Click **Save**.
