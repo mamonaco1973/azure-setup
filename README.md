@@ -3,7 +3,7 @@ Azure Terraform Setup Instructions
 
 This project is a companion to a video done on my channel on how to configure terraform with Azure. 
 
-The terraform in this project creates a minimal VPC with only one public subnet. 
+The terraform in this project creates a minimal VNET with only one public subnet. 
 
 A VM is created with Ubuntu as the OS with a [custom_data](scripts/custom_data.sh) script installing apache when the instance boots.
 
