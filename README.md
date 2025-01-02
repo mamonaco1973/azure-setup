@@ -121,6 +121,8 @@ export ARM_CLIENT_SECRET="your-client-secret"
 
 # Set the Azure Tenant ID
 export ARM_TENANT_ID="your-tenant-id"
+
+az login --service-principal --username "$ARM_CLIENT_ID" --password "$ARM_CLIENT_SECRET" --tenant "$ARM_TENANT_ID"
 ```
 
 ### Powershell Example
@@ -137,6 +139,8 @@ $env:ARM_CLIENT_SECRET = "your-client-secret"
 
 # Set the Azure Tenant ID
 $env:ARM_TENANT_ID = "your-tenant-id"
+
+az login --service-principal --username $Env:ARM_CLIENT_ID --password $Env:ARM_CLIENT_SECRET --tenant $Env:ARM_TENANT_ID
 ```
 
 ## Run the "apply" script
