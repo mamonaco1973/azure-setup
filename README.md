@@ -7,6 +7,13 @@ The Terraform configuration in this project creates a minimal virtual network (V
 
 An Ubuntu virtual machine (VM) is deployed, and a [custom_data](scripts/custom_data.sh) script is used to install Apache during the instance's boot process.
 
+## Download this Repository
+
+```bash
+git clone https://github.com/mamonaco1973/azure-setup.git
+cd azure-setup
+```
+
 ## Prerequisites
 
 * [Install AZ CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) 
