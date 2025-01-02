@@ -5,7 +5,7 @@ This project complements a video on my channel that demonstrates how to configur
 
 The Terraform configuration in this project creates a minimal virtual network (VNet) with a single public subnet.
 
-An Ubuntu virtual machine (VM) is deployed, and a custom_data](scripts/custom_data.sh) script is used to install Apache during the instance's boot process.
+An Ubuntu virtual machine (VM) is deployed, and a [custom_data](scripts/custom_data.sh) script is used to install Apache during the instance's boot process.
 
 ## Prerequisites
 
