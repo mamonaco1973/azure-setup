@@ -65,9 +65,9 @@ The tenant id specifies which active directory you will be using. If you are jus
 ### 4. **Copy the Tenant ID**
    - Locate the **Tenant ID** field and click the **copy icon** next to it to copy it to your clipboard.
 
-## Create the Service Prinicpal
+## Create the App Registration
 
-To set up a system account for Terraform, you need to create a **Service Principal** in Azure. Below are the steps:
+To set up a system account for Terraform, you need to create a **App Registration** in Azure. Below are the steps:
 
 
 ### **1. Log in to Azure**
