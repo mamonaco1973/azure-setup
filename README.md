@@ -95,14 +95,14 @@ To set up a system account for Terraform, you need to create a **App Registratio
    - Click **Add**.
    - **Copy the generated value** immediately as you won't be able to view it again.
 
-### **6. Assign Roles to the Service Principal**
+### **6. Assign Roles to the App Registration**
    - Go to the **Subscriptions** blade.
    - Select the subscription where Terraform will manage resources.
    - Click **Access Control (IAM)** in the left-hand menu.
    - Click **+ Add Role Assignment**.
    - Assign the **Contributor** role (In the `Privileged administrator` roles tab)
    - In the **Assign Access To** field, select **Azure AD user, group, or service principal**.
-   - Search for the registered service principal (e.g., `Terraform-SP`) and select it.
+   - Search for the App Registration (e.g., `Terraform-SP`) and select it.
    - Click **Save**.
 ### **7. Note Down Required Details**
    You will need the following details for your Terraform configuration:
