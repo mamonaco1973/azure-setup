@@ -3,7 +3,7 @@ Azure Terraform Setup Instructions
 
 This project complements a video on my channel that demonstrates how to configure Terraform with Azure.
 
-The video for this project is [Azure + Terraform: Easy Setup](https://www.youtube.com/watch?v=wwi3kVgYNOk).
+The video for this project is [Azure + Terraform: Easy Setup](https://youtu.be/NLnFxRdBlj4).
 
 The Terraform configuration in this project creates a minimal virtual network (VNet) with a single public subnet.
 
