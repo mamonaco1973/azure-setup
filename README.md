@@ -1,228 +1,114 @@
-Azure Terraform Setup Instructions
-=========================================
+# Azure + Terraform Setup
 
-This project complements a video on my channel that demonstrates how to configure Terraform with Azure.
+The companion project to the
+[Azure + Terraform: Easy Setup](https://youtu.be/NLnFxRdBlj4) video. It shows
+how to give Terraform a service principal in an Azure subscription, then
+proves the setup works by building the smallest useful thing: a VNet with one
+subnet and an Ubuntu VM running Apache.
 
-The video for this project is [Azure + Terraform: Easy Setup](https://youtu.be/NLnFxRdBlj4).
+![Apache test page](apache.png)
 
-The Terraform configuration in this project creates a minimal virtual network (VNet) with a single public subnet.
+| Piece | Where | Role |
+|---|---|---|
+| **setup-vm** | `setup-subnet` (10.0.1.0/24) | `Standard_B1s`, Canonical Ubuntu 24.04; custom data installs Apache; SSH key from `keys/Public_Key` for user `ubuntu` |
+| **setup-pip** | `setup-resource-group` | public IP with DNS name `setup-vm-<id>.centralus.cloudapp.azure.com` |
+| **setup-vnet** | Central US | 10.0.0.0/16 |
+| **setup-nsg** | `setup-resource-group` | rules for 22 and 80 from anywhere |
 
-An Ubuntu virtual machine (VM) is deployed, and a [custom_data](scripts/custom_data.sh) script is used to install Apache during the instance's boot process.
+## Architecture
 
-## Download this Repository
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="architecture-dark.svg">
+  <img alt="Terraform launches setup-vm, a Standard_B1s, from Canonical's Ubuntu 24.04 marketplace image into setup-subnet of setup-vnet, with a public IP and the SSH key from keys/Public_Key. Its custom data installs Apache. A browser reaches it over HTTP and an SSH client on port 22." src="architecture-light.svg">
+</picture>
+
+Regenerate with `python3 make_diagram.py`.
+
+Everything is in `main.tf`. `scripts/custom_data.sh` installs and starts
+Apache. Bash and PowerShell versions of each script are included.
+
+## Give Terraform access to Azure
+
+You need an [Azure account](https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account/).
+Upgrade it to **Pay as you go** for these projects: the free offer can block
+some services in some regions, in ways that are hard to predict.
+
+1. **Subscription ID**: in the [Azure Portal](https://portal.azure.com/),
+   open **Subscriptions** and copy the ID of the subscription Terraform will
+   use.
+2. **Tenant ID**: open **Microsoft Entra ID** (formerly Azure Active
+   Directory); the **Tenant ID** is on the **Overview** page.
+3. **App registration**: in Microsoft Entra ID, open **App registrations**,
+   choose **New registration**, name it (for example `Terraform-SP`), keep
+   the default account type and no redirect URI, and **Register**. Its
+   **Application (client) ID** is on its **Overview** page.
+4. **Client secret**: in the app's **Certificates & secrets**, add a client
+   secret and copy its value immediately; it's shown only once.
+5. **Role**: in the subscription's **Access control (IAM)**, add a role
+   assignment of **Contributor** (under *Privileged administrator roles*) to
+   the app registration.
+6. Export the four values and sign in:
+
+   ```bash
+   export ARM_SUBSCRIPTION_ID="your-subscription-id"
+   export ARM_CLIENT_ID="your-client-id"
+   export ARM_CLIENT_SECRET="your-client-secret"
+   export ARM_TENANT_ID="your-tenant-id"
+   az login --service-principal --username "$ARM_CLIENT_ID" \
+     --password "$ARM_CLIENT_SECRET" --tenant "$ARM_TENANT_ID"
+   ```
+
+   ```powershell
+   $env:ARM_SUBSCRIPTION_ID = "your-subscription-id"
+   $env:ARM_CLIENT_ID = "your-client-id"
+   $env:ARM_CLIENT_SECRET = "your-client-secret"
+   $env:ARM_TENANT_ID = "your-tenant-id"
+   az login --service-principal --username $Env:ARM_CLIENT_ID `
+     --password $Env:ARM_CLIENT_SECRET --tenant $Env:ARM_TENANT_ID
+   ```
+
+## Prerequisites
+
+* [Install AZ CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
+* [Install Terraform](https://developer.hashicorp.com/terraform/install)
+* [Install Packer](https://developer.hashicorp.com/packer/install)
+
+`check_env.sh` checks that `az`, `packer` and `terraform` are on your `PATH`
+(Packer isn't used here, but the later projects need it), that the four
+`ARM_*` variables are set, and that the service principal can sign in.
+
+## Deploy
 
 ```bash
 git clone https://github.com/mamonaco1973/azure-setup.git
 cd azure-setup
+./apply.sh       # or .\apply.ps1
 ```
 
-## Prerequisites
+The VM is created in Central US, in `setup-resource-group`; Terraform prints
+its DNS name as `vm_public_fqdn`.
 
-* [Install AZ CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) 
-* [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)
-* [Install Latest Packer](https://developer.hashicorp.com/packer/install)
+## Try it
 
-NOTE: Make sure the az, packer and terraform commands are all in your $PATH.
+1. Open `http://<vm_public_fqdn>`. Apache's test page appears once the custom
+   data has finished, which can take up to 5 minutes.
+2. SSH in with the project's key:
 
-The [check_env](./check_env.sh) script will validate this is set correctly when you run the terraform build.
+   ```bash
+   ssh -i keys/Private_Key ubuntu@<vm_public_fqdn>
+   ```
 
-## Azure Account
-
-To run this example you need an [Azure account](https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account/). 
-You will need to upgrade to "Pay as you go" for all my terraform examples to work properly. With the free option you may be locked out of certain services in certain regions which is hard to predict.
-
-## Get your ARM_SUBSCRIPTION_ID
-
-### 1. **Log in to Azure Portal**
-   - Go to the [Azure Portal](https://portal.azure.com/) and log in with your credentials.
-
-### 2. **Navigate to Subscriptions**
-   - In the left-hand navigation pane, select **Subscriptions**.
-   - If you don't see it, use the search bar at the top and search for "Subscriptions."
-
-### 3. **View Subscription List**
-   - You will see a list of all subscriptions associated with your account.
-
-### 4. **Find the Subscription ID**
-   - Each subscription will have a corresponding **Subscription ID** listed in the table.
-   - If there are multiple subscriptions, locate the one you want and copy its ID.
-
-## Get your ARM_TENANT_ID
-
-The tenant id specifies which active directory you will be using. If you are just starting out you will likely be using the default active directory tenant.
-
-### 1. **Log in to Azure Portal**
-   - Visit the [Azure Portal](https://portal.azure.com/) and log in with your credentials.
-
-### 2. **Navigate to Azure Active Directory**
-   - In the left-hand navigation pane, select **Azure Active Directory**.
-   - If it’s not visible, use the search bar at the top and search for "Azure Active Directory."
-
-### 3. **View the Tenant Information**
-   - Once on the **Azure Active Directory** overview page, you will see details about your directory.
-   - The **Tenant ID** is listed under the **Basic Information** section, typically along with:
-     - **Tenant name**
-     - **Primary domain**
-
-### 4. **Copy the Tenant ID**
-   - Locate the **Tenant ID** field and click the **copy icon** next to it to copy it to your clipboard.
-
-## Create the App Registration
-
-To set up a system account for Terraform, you need to create a **App Registration** in Azure. Below are the steps:
-
-
-### **1. Log in to Azure**
-   - Log in to the [Azure Portal](https://portal.azure.com/).
-
-### **2. Open Azure Active Directory**
-   - In the left-hand navigation pane, select **Azure Active Directory**.
-   - If you don’t see it, use the search bar at the top to search for "Azure Active Directory."
-
-### **3. Navigate to App Registrations**
-   - In the **Azure Active Directory** blade, select **App Registrations**.
-   - Click **+ New Registration** to create a new system account.
-
-### **4. Register the System Account**
-   - Fill in the required details:
-     - **Name**: Choose a descriptive name for the system account (e.g., `Terraform-SP`).
-     - **Supported Account Types**: Keep the default "Accounts in this organizational directory only."
-     - **Redirect URI**: Leave this blank unless you are configuring authentication for a web app.
-   - Click **Register**.
-
-### **5. Create a Client Secret**
-   - Once the app is registered, navigate to the **Certificates & Secrets** section.
-   - Under **Client Secrets**, click **+ New Client Secret**.
-   - Enter a description (e.g., `Terraform Key`) and select an expiration period.
-   - Click **Add**.
-   - **Copy the generated value** immediately as you won't be able to view it again.
-
-### **6. Assign Roles to the App Registration**
-   - Go to the **Subscriptions** blade.
-   - Select the subscription where Terraform will manage resources.
-   - Click **Access Control (IAM)** in the left-hand menu.
-   - Click **+ Add Role Assignment**.
-   - Assign the **Contributor** role (In the `Privileged administrator` roles tab)
-   - In the **Assign Access To** field, select **Azure AD user, group, or service principal**.
-   - Search for the App Registration (e.g., `Terraform-SP`) and select it.
-   - Click **Save**.
-### **7. Note Down Required Details**
-   You will need the following details for your Terraform configuration:
-   - **Subscription ID**: Found in the Subscription details page.
-   - **Tenant ID**: Found in Azure Active Directory → **Overview**.
-   - **Client ID**: Found in the registered app under **Overview**.
-   - **Client Secret**: Generated in step 5.
-
-## Set Environment Variables
-
-Here are examples of how to set the required Azure Resource Manager (ARM) environment variables for Terraform in **Bash** and **PowerShell**.
-
-### Bash Example
-```bash
-# Set the Azure Subscription ID
-export ARM_SUBSCRIPTION_ID="your-subscription-id"
-
-# Set the Azure Client ID (Service Principal Application ID)
-export ARM_CLIENT_ID="your-client-id"
-
-# Set the Azure Client Secret (Service Principal Key)
-export ARM_CLIENT_SECRET="your-client-secret"
-
-# Set the Azure Tenant ID
-export ARM_TENANT_ID="your-tenant-id"
-
-az login --service-principal --username "$ARM_CLIENT_ID" --password "$ARM_CLIENT_SECRET" --tenant "$ARM_TENANT_ID"
-```
-
-### Powershell Example
-
-```powershell
-# Set the Azure Subscription ID
-$env:ARM_SUBSCRIPTION_ID = "your-subscription-id"
-
-# Set the Azure Client ID (Service Principal Application ID)
-$env:ARM_CLIENT_ID = "your-client-id"
-
-# Set the Azure Client Secret (Service Principal Key)
-$env:ARM_CLIENT_SECRET = "your-client-secret"
-
-# Set the Azure Tenant ID
-$env:ARM_TENANT_ID = "your-tenant-id"
-
-az login --service-principal --username $Env:ARM_CLIENT_ID --password $Env:ARM_CLIENT_SECRET --tenant $Env:ARM_TENANT_ID
-```
-
-## Run the "apply" script
+## Teardown
 
 ```bash
-~/azure-setup$ ./apply.sh
-NOTE: Validating that required commands are found in your PATH.
-NOTE: az is found in the current PATH.
-NOTE: packer is found in the current PATH.
-NOTE: terraform is found in the current PATH.
-NOTE: All required commands are available.
-NOTE: Validating that required environment variables are set.
-NOTE: ARM_CLIENT_ID is set.
-NOTE: ARM_CLIENT_SECRET is set.
-NOTE: ARM_SUBSCRIPTION_ID is set.
-NOTE: ARM_TENANT_ID is set.
-NOTE: All required environment variables are set.
-NOTE: Logging in to Azure using Service Principal...
-NOTE: Successfully logged into Azure.
-Initializing the backend...
-Initializing provider plugins...
-- Finding latest version of hashicorp/azurerm...
-- Installing hashicorp/azurerm v4.14.0...
-- Installed hashicorp/azurerm v4.14.0 (signed by HashiCorp)
-Terraform has created a lock file .terraform.lock.hcl to record the provider
-selections it made above. Include this file in your version control repository
-so that Terraform can guarantee to make the same selections by default when
-you run "terraform init" in the future.
-
-Terraform has been successfully initialized!
-
-You may now begin working with Terraform. Try running "terraform plan" to see
-any changes that are required for your infrastructure. All Terraform commands
-should now work.
-
-If you ever set or change modules or backend configuration for Terraform,
-rerun this command to reinitialize your working directory. If you forget, other
-commands will detect it and remind you to do so if necessary.
-data.azurerm_client_config.current: Reading...
-data.azurerm_subscription.primary: Reading...
-[...]
+./destroy.sh     # or .\destroy.ps1
 ```
 
-## Test the build
+## Notes
 
-Once built a VM called `setup-vm` will be created in the `setup-resource-group` and will be publicly available. The output of the terraform will be the public FQDN.
-
-You can `SSH` to that instance with the "[Private_Key](keys\Private_Key)".
-
-You can also open a web browser and see that apache has been deployed - This can take up to 5 minutes to initialize.
-
-![architecture diagram](apache.png)
-
-## Run the "destroy" script when you are done
-
-```bash
-~/azure-setup$ ./destroy.sh
-Initializing the backend...
-Initializing provider plugins...
-- Reusing previous version of hashicorp/azurerm from the dependency lock file
-- Using previously-installed hashicorp/azurerm v4.14.0
-
-Terraform has been successfully initialized!
-
-You may now begin working with Terraform. Try running "terraform plan" to see
-any changes that are required for your infrastructure. All Terraform commands
-should now work.
-
-If you ever set or change modules or backend configuration for Terraform,
-rerun this command to reinitialize your working directory. If you forget, other
-commands will detect it and remind you to do so if necessary.
-data.azurerm_client_config.current: Reading...
-azurerm_resource_group.setup: Refreshing state... [id=/subscriptions/e4dee2a9-14a7-42fd-a86f-11428698a6a3/resourceGroups/setup-resource-group]
-data.azurerm_subscription.primary: Reading...
-[...]
-```
+- **Lab only.** The SSH key pair in `keys/` is committed to this public
+  repository, so anyone can use the private key. Generate your own key pair
+  for anything more.
+- `setup-nsg` isn't associated with `setup-subnet` or the VM's NIC, so its
+  rules don't apply. A Basic public IP with no NSG in effect leaves every
+  port on the VM reachable from the internet.
